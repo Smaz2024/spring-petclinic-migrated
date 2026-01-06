@@ -11,8 +11,8 @@ The application uses **Micrometer** to bridge application metrics to **Prometheu
 
 | Metric Name | Type | Description |
 |-------------|------|-------------|
-| `petclinic.owner.created` | Counter | Number of new owners registered |
-| `petclinic.visit.created` | Counter | Number of visits scheduled |
+| `petclinic.owners.created` | Counter | Number of new owners registered |
+| `petclinic.visits.created` | Counter | Number of visits scheduled |
 | `http.server.requests` | Timer | Request duration and throughput |
 | `resilience4j.circuitbreaker.state` | Gauge | State of circuit breakers (CLOSED, OPEN) |
 | `hikaricp.connections.active` | Gauge | Active DB connections |

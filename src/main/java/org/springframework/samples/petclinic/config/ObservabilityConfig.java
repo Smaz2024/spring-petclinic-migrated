@@ -24,6 +24,10 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.semconv.ResourceAttributes;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+import io.opentelemetry.exporter.logging.LoggingSpanExporter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -46,12 +50,42 @@ import java.util.List;
 @Configuration
 public class ObservabilityConfig {
 
+  private static final Logger logger = LoggerFactory.getLogger(ObservabilityConfig.class);
+
   /**
    * Flag to enable Prometheus registry via application.properties:
    * metrics.prometheus.enabled=true
    */
   @Value("${metrics.prometheus.enabled:false}")
   private boolean prometheusEnabled;
+
+  /**
+   * Sampler type: 'traceidratio' (default) or 'always_on'
+   * otel.traces.sampler.type=traceidratio
+   */
+  @Value("${otel.traces.sampler.type:traceidratio}")
+  private String samplerType;
+
+  /**
+   * Sampling ratio (0.0 to 1.0) when using traceidratio sampler
+   * otel.traces.sampler.arg=0.1 (10% sampling)
+   */
+  @Value("${otel.traces.sampler.arg:0.1}")
+  private double samplingRatio;
+
+  /**
+   * OTLP Exporter endpoint
+   * otel.exporter.otlp.endpoint=http://localhost:4317
+   */
+  @Value("${otel.exporter.otlp.endpoint:http://localhost:4317}")
+  private String otlpEndpoint;
+
+  /**
+   * OTLP Exporter protocol: 'grpc' or 'http/protobuf'
+   * otel.exporter.otlp.protocol=grpc
+   */
+  @Value("${otel.exporter.otlp.protocol:grpc}")
+  private String otlpProtocol;
 
   // --- Meter Registries ---
 
@@ -98,26 +132,65 @@ public class ObservabilityConfig {
   // --- OpenTelemetry Tracing ---
 
   /**
-   * Creates an SDK tracer provider for OpenTelemetry.
+   * Creates an SDK tracer provider for OpenTelemetry with configurable sampling.
+   * Uses OTLP gRPC exporter for distributed tracing infrastructure.
+   * Falls back to logging exporter if OTLP is unavailable.
    *
    * @return The SDK tracer provider.
    */
   @Bean
-  @SuppressWarnings("deprecation")
   public SdkTracerProvider sdkTracerProvider() {
-    // Uses a logging span exporter for demonstration purposes.
-    SpanExporter spanExporter = io.opentelemetry.exporter.logging.LoggingSpanExporter.create();
+    // Create OTLP gRPC span exporter
+    SpanExporter spanExporter;
+    try {
+      spanExporter = OtlpGrpcSpanExporter.builder()
+          .setEndpoint(otlpEndpoint)
+          .build();
+      logger.info("OTLP Exporter configured: {}", otlpEndpoint);
+    } catch (Exception e) {
+      // Fallback to logging exporter if OTLP is unavailable
+      logger.warn("OTLP Exporter unavailable ({}), falling back to logging exporter", e.getMessage());
+      spanExporter = LoggingSpanExporter.create();
+    }
+
+    // Configure sampler based on property
+    Sampler sampler = createSampler();
+    logger.info("OTEL Sampler configured: {} with ratio {}", samplerType, samplingRatio);
 
     // Sets the service name for the resource.
     Resource resource = Resource.getDefault()
         .merge(Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "spring-petclinic")));
 
-    // Builds the SDK tracer provider with a batch span processor and a sampler that always samples.
+    // Builds the SDK tracer provider with a batch span processor and configurable sampler.
     return SdkTracerProvider.builder()
-        .setSampler(Sampler.alwaysOn())
+        .setSampler(sampler)
         .setResource(resource)
         .addSpanProcessor(BatchSpanProcessor.builder(spanExporter).build())
         .build();
+  }
+
+  /**
+   * Creates a sampler based on configuration.
+   *
+   * @return The configured Sampler.
+   */
+  private Sampler createSampler() {
+    Sampler baseSampler;
+
+    if ("always_on".equalsIgnoreCase(samplerType)) {
+      baseSampler = Sampler.alwaysOn();
+      logger.info("Using AlwaysOn sampler: 100% sampling");
+    } else if ("traceidratio".equalsIgnoreCase(samplerType)) {
+      baseSampler = Sampler.traceIdRatioBased(samplingRatio);
+      logger.info("Using TraceIdRatioBased sampler: {}% sampling", samplingRatio * 100);
+    } else {
+      // Default to 10% sampling
+      baseSampler = Sampler.traceIdRatioBased(0.1);
+      logger.warn("Unknown sampler type: {}, defaulting to 10% TraceIdRatioBased", samplerType);
+    }
+
+    // Wrap with ParentBasedSampler to respect parent span decisions
+    return Sampler.parentBased(baseSampler);
   }
 
   /**

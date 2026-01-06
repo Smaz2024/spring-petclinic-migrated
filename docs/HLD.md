@@ -4,6 +4,7 @@
 
 The modernized Petclinic application follows a layered architecture pattern, enhanced with Resilience and Observability aspects.
 
+
 ```mermaid
 graph TD
     Client[Web Browser / Mobile] --> LB[Load Balancer]
@@ -11,11 +12,6 @@ graph TD
     
     subgraph Application_Layer
         Web --> Security[Security Config]
-
-
-    ## Configuration Externalization
-
-    All major configuration (database, cache, JPA, resilience, observability, etc.) is externalized in `src/main/resources/application.properties`. No sensitive or environment-specific values are hardcoded in Java code. See the properties file for details.
         Web --> MVC[Spring MVC Controllers]
         MVC --> Service[Service Layer]
         
@@ -39,6 +35,10 @@ graph TD
         Audit --> Logs[Structured Logs]
     end
 ```
+
+## Configuration Externalization
+
+All major configuration (database, cache, JPA, resilience, observability, etc.) is externalized in `src/main/resources/application.properties`. No sensitive or environment-specific values are hardcoded in Java code. See the properties file for details.
 
 ## Key Components
 
