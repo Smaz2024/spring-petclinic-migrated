@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jboss-deployment-structure xmlns="urn:jboss:deployment-structure:1.2">
+    <deployment>
+        <dependencies>
+            <!-- Hibernate 6 and JPA 3.1 modules are provided by WildFly 30 -->
+            <module name="org.hibernate" export="true" />
+            <module name="jakarta.persistence.api" export="true" />
+            <module name="jakarta.transaction.api" export="true" />
+            <module name="jakarta.xml.bind.api" export="true" />
+            <module name="jakarta.activation.api" export="true" />
+            <module name="jakarta.validation.api" export="true" />
+            <!-- Include the jcache layer if needed by hibernate -->
+            <module name="org.hibernate.jcache" optional="true" export="true" />
+        </dependencies>
+    </deployment>
+</jboss-deployment-structure>

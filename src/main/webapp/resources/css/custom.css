@@ -1,0 +1,65 @@
+/*
+ * Custom CSS for Spring Petclinic - Bootstrap 5 Migration
+ */
+
+:root {
+  --bs-primary: #3d9970; /* Petclinic Green */
+  --bs-secondary: #ff851b; /* Petclinic Orange */
+}
+
+body {
+    padding-top: 5rem; /* Space for fixed navbar */
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #333;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(61, 153, 112, 0.05);
+}
+
+.navbar-brand img {
+    height: 30px;
+    margin-right: 10px;
+}
+
+.xd-container {
+    margin-top: 40px;
+    margin-bottom: 100px;
+    padding: 0 15px;
+}
+
+h2 {
+  margin-bottom: 20px;
+  color: var(--bs-primary);
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+}
+
+.form-horizontal .control-label {
+    text-align: left;
+}
+
+.help-inline {
+    display: inline-block;
+    padding-left: 5px;
+    color: #dc3545; /* Bootstrap danger color */
+}
+
+.has-error .form-control {
+    border-color: #dc3545;
+}
+
+.has-error .help-inline {
+    color: #dc3545;
+}
+
+/* Button overrides */
+.btn-primary {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.btn-primary:hover {
+    background-color: #2e7a58;
+    border-color: #2e7a58;
+}
